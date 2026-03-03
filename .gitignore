@@ -1,2 +1,6 @@
 .DS_Store
 **/.DS_Store
+
+# Local duplicates (canonical icons live in assets/)
+bonus/Lab-in-a-Box_LocalAI_icon_192.png
+bonus/Lab-in-a-Box_LocalAI_icon_512.png
