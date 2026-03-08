@@ -1,0 +1,82 @@
+# ============================================================
+# Lab-in-a-Box: Local AI — ZimaOS Edition
+# Version: 1.0
+# Requires: ZimaOS 1.5+ with Docker data-root on writable storage
+#
+# BEFORE YOU START:
+#   1. Copy .env.example to .env and edit the values
+#   2. Make sure your storage path exists and is writable
+#   3. Deploy with: docker compose --env-file .env up -d
+# ============================================================
+
+name: labinabox-local-ai
+
+services:
+
+  ollama:
+    image: ollama/ollama:0.5.7   # Pinned for stability — test before upgrading
+    restart: unless-stopped
+    cpu_shares: 90
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT:-4g}
+    networks:
+      - labinabox
+    ports:
+      - target: 11434
+        published: "${OLLAMA_PORT:-11434}"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/ollama
+        target: /root/.ollama
+        bind:
+          create_host_path: true
+
+  openwebui:
+    image: ghcr.io/open-webui/open-webui:0.5.20   # Pinned for stability — test before upgrading
+    restart: unless-stopped
+    cpu_shares: 90
+    depends_on:
+      ollama:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          memory: ${MEMORY_LIMIT:-4g}
+    environment:
+      OLLAMA_BASE_URL: http://ollama:11434
+    networks:
+      - labinabox
+    ports:
+      - target: 8080
+        published: "${WEBUI_PORT:-3000}"
+        protocol: tcp
+    volumes:
+      - type: bind
+        source: ${DATA_ROOT}/openwebui
+        target: /app/backend/data
+        bind:
+          create_host_path: true
+
+networks:
+  labinabox:
+    name: labinabox-local-ai_default
+
+# ============================================================
+# ZimaOS App Tile Integration (CasaOS metadata)
+# This makes the stack appear as a tile in the ZimaOS UI
+# and in the ZimaOS iOS client on your local network.
+# ============================================================
+x-casaos:
+  title:
+    en_us: "Lab-in-a-Box: Local AI"
+  icon: "https://raw.githubusercontent.com/WolfNinja32/Lab-in-a-Box/main/assets/icons/local-ai/icon-192.png"
+  port_map: "${WEBUI_PORT:-3000}"
+  scheme: http
+  index: "/"
+  author: self
+  category: self
+  hostname: ""
+  is_uncontrolled: false
